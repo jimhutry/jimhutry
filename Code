@@ -1,31 +1,46 @@
-void turnEnc(float angle) {
-    // Параметры робота
-    const float wheelDiameter = 3.0;      // диаметр колеса (см) – подставь свой
-    const float trackWidth = 12.0;        // база между колесами (см) – измерь у своего робота
+void turnEnc(float angle, int direction) {
+    // direction: 1 = вправо, -1 = влево
+
+    // Параметры робота (замерь свой!)
+    const float wheelDiameter = 3.0;     // диаметр колеса (см)
+    const float trackWidth = 12.0;       // расстояние между колёсами (см)
     const float wheelCircumference = 3.14 * wheelDiameter;
 
-    // Сколько нужно проехать одному колесу для поворота на angle градусов
-    float turnCircumference = 3.14 * trackWidth;      // окружность "базы"
-    float dist = (turnCircumference * angle) / 360.0; // путь одного колеса при повороте
+    // Длина пути колеса при заданном угле поворота
+    float turnCircumference = 3.14 * trackWidth;
+    float dist = (turnCircumference * angle) / 360.0;
 
-    // Конвертация в градусы энкодера
+    // Переводим путь в градусы энкодера
     float rotations = dist / wheelCircumference;
     float degrees = rotations * 360.0;
 
-    // Сброс энкодеров
+    // Сбрасываем энкодеры
     resetMotorEncoder(motorA);
     resetMotorEncoder(motorB);
 
-    // Запуск: один мотор вперед, другой назад
-    setMotorSpeed(motorA, 50);
-    setMotorSpeed(motorB, -50);
+    float speedA = 50 * direction;
+    float speedB = -50 * direction;
 
-    // Ждем, пока не достигнем нужного угла
-    while (abs(getMotorEncoder(motorA)) < degrees) {
+    setMotorSpeed(motorA, speedA);
+    setMotorSpeed(motorB, speedB);
+
+    // Работаем, пока не докрутим угол
+    while (fabs(getMotorEncoder(motorA)) < degrees ||
+           fabs(getMotorEncoder(motorB)) < degrees) {
         delay(50);
+
+        // Подравнивание (как в moveEnc)
+        if (fabs(getMotorEncoder(motorA)) > fabs(getMotorEncoder(motorB))) {
+            speedB += 0.15 * direction;
+        } else if (fabs(getMotorEncoder(motorA)) < fabs(getMotorEncoder(motorB))) {
+            speedA += 0.15 * direction;
+        }
+
+        setMotorSpeed(motorA, speedA);
+        setMotorSpeed(motorB, speedB);
     }
 
-    // Остановка
+    // Стоп
     setMotorSpeed(motorA, 0);
     setMotorSpeed(motorB, 0);
 }
